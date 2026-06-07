@@ -1,0 +1,1335 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stylophone Synthesizer S-1 (Retro Instrument Simulation)</title>
+    <!-- Tailwind CSS Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+              mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+            }
+          }
+        }
+      }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+      body {
+        margin: 0;
+        background-color: #111312;
+      }
+      /* Custom cursors and sliders styling */
+      .knob-rotatable {
+        cursor: ns-resize;
+      }
+      /* Realistic scanline overlays */
+      .crt-scanlines {
+        background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+        background-size: 100% 4px;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen w-full bg-[#1a1a16] text-white flex flex-col justify-between items-center px-4 py-4 sm:py-8 relative overflow-y-auto overflow-x-hidden select-none" style="background-image: radial-gradient(circle at center, #2c2c24 0%, #1a1a16 100%); background-attachment: fixed;">
+    
+    <!-- Decorative ambient glow reflections -->
+    <div class="absolute top-[-20%] left-[-10%] w-[60%] h-[70%] rounded-full bg-cyan-950/5 blur-[130px] pointer-events-none select-none"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[60%] rounded-full bg-amber-950/5 blur-[130px] pointer-events-none select-none"></div>
+
+    <!-- Top Ribbon Branding Header -->
+    <div class="w-full max-w-5xl flex justify-between items-center mb-4 z-10" id="top-ribbon-branding">
+      <div class="flex items-center gap-2">
+        <div class="px-2 py-0.5 bg-neutral-900/90 border border-neutral-800 rounded text-[9px] font-mono tracking-widest text-[#d6aa3c] select-none uppercase shadow-sm">
+          CLASSIC MONOPHONIC SYNTHESIZER
+        </div>
+      </div>
+      <div class="text-[11px] font-mono text-neutral-400 font-bold uppercase tracking-widest">
+        DUBREQ Ltd 1968 MODEL SIMULATOR
+      </div>
+    </div>
+
+    <!-- Main Stylophone Outer Frame Box -->
+    <div 
+      class="relative w-full max-w-5xl bg-gradient-to-br from-[#d4d4d4] via-[#c2c2c2] to-[#9c9c9c] border-[14px] border-r-[20px] border-b-[20px] border-[#0a0a0a] rounded-[24px] p-6 flex flex-col gap-6 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.85),_inset_0_2px_5px_rgba(255,255,255,0.85)] overflow-visible text-neutral-900"
+      id="stylophone-hardware-containment"
+    >
+      <!-- Faceplate glare reflection -->
+      <div class="absolute inset-0 bg-white/5 pointer-events-none rounded-[10px]" style="background-image: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.15) 0%, transparent 60%)"></div>
+
+      <!-- ROW 1: Speaker & Visual Monitors -->
+      <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10">
+        
+        <!-- SPEAKER GRILL (Left Block) -->
+        <div class="lg:col-span-5 h-[190px] bg-[#181a19] border border-[#2e3130] rounded-lg p-5 flex flex-col items-center justify-between relative shadow-inner" id="stylophone-speaker-grill-box">
+          <!-- 4 Corner Screws -->
+          <div class="absolute top-2 left-2 w-3.5 h-3.5 rounded-full bg-gradient-to-br from-neutral-500 via-neutral-400 to-neutral-700 border border-neutral-900 shadow flex items-center justify-center">
+            <div class="w-2.5 h-0.5 bg-neutral-800 rotate-45 transform"></div>
+          </div>
+          <div class="absolute top-2 right-2 w-3.5 h-3.5 rounded-full bg-gradient-to-br from-neutral-500 via-neutral-400 to-neutral-700 border border-neutral-900 shadow flex items-center justify-center">
+            <div class="w-2.5 h-0.5 bg-neutral-800 -rotate-45 transform"></div>
+          </div>
+          <div class="absolute bottom-2 left-2 w-3.5 h-3.5 rounded-full bg-gradient-to-br from-neutral-500 via-neutral-400 to-neutral-700 border border-neutral-900 shadow flex items-center justify-center">
+            <div class="w-2.5 h-0.5 bg-neutral-800 -rotate-30 transform"></div>
+          </div>
+          <div class="absolute bottom-2 right-2 w-3.5 h-3.5 rounded-full bg-gradient-to-br from-neutral-500 via-neutral-400 to-neutral-700 border border-neutral-900 shadow flex items-center justify-center">
+            <div class="w-2.5 h-0.5 bg-neutral-800 rotate-60 transform"></div>
+          </div>
+
+          <!-- Stylophone golden labels -->
+          <div class="text-[10px] tracking-[0.25em] text-[#d6aa3c] font-black font-mono select-none">
+            S &nbsp; T &nbsp; Y &nbsp; L &nbsp; O &nbsp; P &nbsp; H &nbsp; O &nbsp; N &nbsp; E
+          </div>
+
+          <!-- Inner vibrating fabric slats container -->
+          <div class="relative w-full flex-grow my-4 flex justify-between px-3 overflow-hidden bg-[#0a0a09] rounded-sm shadow-2xl border-2 border-neutral-900">
+            <!-- Vibrating speaker mesh (modulated via requestAnimationFrame) -->
+            <div 
+              id="speaker-mesh"
+              class="absolute inset-0 bg-[#3a200a]/30 transition-transform duration-75 select-none"
+              style="background-image: radial-gradient(#1a0d03 20%, transparent 22%), radial-gradient(#110802 20%, transparent 22%); background-size: 8px 8px; background-position: 0 0, 4px 4px;"
+            ></div>
+
+            <!-- Vertical slats overlay -->
+            <script>
+              document.write(Array(15).join('<div class="h-full w-[6px] md:w-[7px] z-10 backdrop-brightness-[0.8] shadow-[inset_1px_1px_2px_rgba(255,255,255,0.08),_inset_-1px_-1px_2px_rgba(0,0,0,0.8),_3px_0_5px_rgba(0,0,0,0.95)]" style="background: linear-gradient(90deg, #1b1e1d 0%, #3e4240 25%, #4c504e 50%, #2e3130 80%, #151717 100%); border-left: 1px solid rgba(0,0,0,0.8); border-right: 1px solid rgba(255,255,255,0.05);"></div>'));
+            </script>
+          </div>
+
+          <div class="text-[9px] text-[#8e918f] font-mono tracking-widest uppercase select-none">
+            TREBLE MODEL S-1 • MADE IN UK
+          </div>
+        </div>
+
+        <!-- DOUBLE MONITORS (Right Block) -->
+        <div class="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4 h-full" id="indicator-deck">
+          
+          <!-- Oscilloscope Card -->
+          <div class="flex flex-col justify-between" id="oscilloscope-rack">
+            <span class="text-[8px] font-mono font-black text-neutral-700 uppercase tracking-widest pl-1 select-none mb-1 text-center sm:text-left">
+              ELECTRON-CATHODE WAVE TRANSLATOR
+            </span>
+            <div class="relative w-full h-[150px] bg-[#121614] border-3 border-[#2a2d2c] rounded-lg overflow-hidden flex items-center justify-center shadow-inner" id="crt-oscilloscope-container">
+              <div class="absolute inset-0 pointer-events-none z-10 crt-scanlines opacity-35"></div>
+              <canvas id="scope-canvas" class="w-full h-full block"></canvas>
+            </div>
+          </div>
+
+          <!-- VU Meter Card -->
+          <div class="flex flex-col justify-between" id="vumeter-rack">
+            <span class="text-[8px] font-mono font-black text-neutral-700 uppercase tracking-widest pl-1 select-none mb-1 text-center sm:text-left">
+              MOVING COIL ELECTRICAL LEVEL DETECTOR
+            </span>
+            <div class="relative w-full h-[150px] bg-[#e3dfd3] border-3 border-[#2a2d2c] rounded-lg overflow-hidden flex items-center justify-center shadow-lg" id="vu-meter-container">
+              <div class="absolute inset-0 pointer-events-none z-10 bg-gradient-to-tr from-transparent via-white/5 to-white/12 rounded-lg"></div>
+              <div class="absolute top-0 right-0 w-1/2 h-1/2 bg-white/5 skew-x-[35deg] origin-top pointer-events-none z-10"></div>
+              <canvas id="vu-canvas" class="w-full h-full block"></canvas>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ROW 2: CONTROL PANEL -->
+      <section class="w-full relative z-10">
+        <div class="w-full bg-[#1b1e1d] border-2 border-[#2b2e2d] rounded-lg p-5 shadow-[inset_0_2px_4px_rgba(255,255,255,0.08),_0_10px_20px_rgba(0,0,0,0.6)] select-none flex flex-col gap-6 text-white" id="stylophone-hardware-panel">
+          
+          <!-- Sub-header border with Pilot Status LED -->
+          <div class="flex justify-between items-center pb-3 border-b border-[#252827]" id="panel-controls-header">
+            <div class="flex items-center gap-2">
+              <div class="relative flex items-center justify-center">
+                <div id="power-led" class="w-3.5 h-3.5 rounded-full border border-neutral-800 transition-all duration-300 bg-neutral-800 shadow-[inset_0_1px_3px_rgba(0,0,0,0.8)]"></div>
+              </div>
+              <span class="text-[10px] uppercase font-black tracking-widest text-[#d6aa3c] font-mono">
+                ANALOG SYSTEM PILOT
+              </span>
+            </div>
+            <span class="text-[9px] font-mono font-bold text-neutral-500">
+              VINTAGE MODEL CORE 1.5V DC
+            </span>
+          </div>
+
+          <!-- Slider Controls and Rotary Dials Grid -->
+          <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-6">
+            
+            <!-- Power Switch Slider -->
+            <div class="flex flex-col items-center justify-between p-3 bg-neutral-900/60 rounded-md border border-neutral-900 shadow-inner min-h-[140px]">
+              <span class="text-[9px] font-mono font-bold text-neutral-400 uppercase tracking-widest text-center">POWER</span>
+              <button id="power-switch-btn" class="relative w-9 h-14 rounded-md border-3 border-neutral-950 bg-[#0f1110] shadow-[inset_0_4px_8px_rgba(0,0,0,0.8)] flex flex-col items-center justify-between py-1">
+                <span class="text-[6px] font-mono text-neutral-500 uppercase leading-none font-bold">ON</span>
+                <div id="power-handle" class="w-7 h-5 rounded border border-neutral-950 bg-gradient-to-b from-neutral-400 via-neutral-100 to-neutral-500 shadow-md flex items-center justify-center transform transition-transform duration-100 translate-y-[15px]">
+                  <div class="w-4 h-[1.5px] bg-neutral-600 rounded-sm mb-0.5"></div>
+                  <div class="w-4 h-[1.5px] bg-neutral-600 rounded-sm"></div>
+                </div>
+                <span class="text-[6px] font-mono text-neutral-500 uppercase leading-none font-bold">OFF</span>
+              </button>
+              <span id="power-status-lbl" class="text-[10px] font-extrabold text-[#d6aa3c] font-mono tracking-wider">OFFLINE</span>
+            </div>
+
+            <!-- Vibrato Modulator Switch -->
+            <div class="flex flex-col items-center justify-between p-3 bg-neutral-900/60 rounded-md border border-neutral-900 shadow-inner min-h-[140px]">
+              <span class="text-[9px] font-mono font-bold text-neutral-400 uppercase tracking-widest text-center">VIBRATO</span>
+              <button id="vibrato-switch-btn" class="relative w-9 h-14 rounded-md border-3 border-neutral-950 bg-[#0f1110] shadow-[inset_0_4px_8px_rgba(0,0,0,0.8)] flex flex-col items-center justify-between py-1 opacity-30 pointer-events-none">
+                <span class="text-[6px] font-mono text-neutral-500 uppercase leading-none font-bold">ON</span>
+                <div id="vibrato-handle" class="w-7 h-5 rounded border border-neutral-950 bg-gradient-to-b from-neutral-400 via-neutral-100 to-neutral-500 shadow-md flex items-center justify-center transform transition-transform duration-100 translate-y-[15px]">
+                  <div class="w-4 h-[1.5px] bg-neutral-600 rounded-sm mb-0.5"></div>
+                  <div class="w-4 h-[1.5px] bg-neutral-600 rounded-sm"></div>
+                </div>
+                <span class="text-[6px] font-mono text-neutral-500 uppercase leading-none font-bold">OFF</span>
+              </button>
+              <span id="vibrato-status-lbl" class="text-[10px] font-extrabold text-[#d6aa3c] font-mono tracking-wider">DIRECT</span>
+            </div>
+
+            <!-- Volume Rotator -->
+            <div class="flex flex-col items-center justify-between p-3 bg-neutral-900/60 rounded-md border border-neutral-900 shadow-inner min-h-[140px] opacity-30 pointer-events-none control-group">
+              <span class="text-[9px] font-mono font-bold text-neutral-400 uppercase tracking-widest text-center">VOLUME</span>
+              <div class="relative w-12 h-12 rounded-full knob-rotatable" id="knob-volume" data-val="0.6" data-min="0.0" data-max="1.0" data-decimals="1">
+                <div class="absolute inset-0 rounded-full border border-neutral-950 bg-gradient-to-br from-neutral-800 via-neutral-900 to-neutral-700 shadow-2xl"></div>
+                <div class="relative w-10 h-10 rounded-full bg-gradient-to-r from-neutral-600 via-[#8a8a8a] to-neutral-700 border-2 border-[#1c1c1c] shadow-lg flex items-center justify-center transition-transform pointer-events-none marker-point" style="transform: rotate(27deg)">
+                  <div class="absolute top-0 w-0.5 h-3 bg-[#e8a31e] rounded shadow"></div>
+                </div>
+              </div>
+              <span id="val-volume-lbl" class="text-[9px] font-mono font-black text-[#d6aa3c] tracking-wider bg-neutral-950 px-1 py-0.5 rounded shadow-inner">60%</span>
+            </div>
+
+            <!-- Pitch Fine Tuner Rotator -->
+            <div class="flex flex-col items-center justify-between p-3 bg-neutral-900/60 rounded-md border border-neutral-900 shadow-inner min-h-[140px] opacity-30 pointer-events-none control-group">
+              <span class="text-[9px] font-mono font-bold text-neutral-400 uppercase tracking-widest text-center">PITCH TUNING</span>
+              <div class="relative w-12 h-12 rounded-full knob-rotatable" id="knob-pitch" data-val="0" data-min="-100" data-max="100" data-decimals="0">
+                <div class="absolute inset-0 rounded-full border border-neutral-950 bg-gradient-to-br from-neutral-800 via-neutral-900 to-neutral-700 shadow-2xl"></div>
+                <div class="relative w-10 h-10 rounded-full bg-gradient-to-r from-neutral-600 via-[#8a8a8a] to-neutral-700 border-2 border-[#1c1c1c] shadow-lg flex items-center justify-center transition-transform pointer-events-none marker-point" style="transform: rotate(0deg)">
+                  <div class="absolute top-0 w-0.5 h-3 bg-[#e8a31e] rounded shadow"></div>
+                </div>
+              </div>
+              <span id="val-pitch-lbl" class="text-[9px] font-mono font-black text-[#d6aa3c] tracking-wider bg-neutral-950 px-1 py-0.5 rounded shadow-inner">0¢</span>
+            </div>
+
+            <!-- Decay Enveloping Rotator -->
+            <div class="flex flex-col items-center justify-between p-3 bg-neutral-900/60 rounded-md border border-neutral-900 shadow-inner min-h-[140px] opacity-30 pointer-events-none control-group">
+              <span class="text-[9px] font-mono font-bold text-neutral-400 uppercase tracking-widest text-center">DECAY TAIL</span>
+              <div class="relative w-12 h-12 rounded-full knob-rotatable" id="knob-decay" data-val="0.12" data-min="0.01" data-max="1.2" data-decimals="2">
+                <div class="absolute inset-0 rounded-full border border-neutral-950 bg-gradient-to-br from-neutral-800 via-neutral-900 to-neutral-700 shadow-2xl"></div>
+                <div class="relative w-10 h-10 rounded-full bg-gradient-to-r from-neutral-600 via-[#8a8a8a] to-neutral-700 border-2 border-[#1c1c1c] shadow-lg flex items-center justify-center transition-transform pointer-events-none marker-point" style="transform: rotate(-110deg)">
+                  <div class="absolute top-0 w-0.5 h-3 bg-[#e8a31e] rounded shadow"></div>
+                </div>
+              </div>
+              <span id="val-decay-lbl" class="text-[9px] font-mono font-black text-[#d6aa3c] tracking-wider bg-neutral-950 px-1 py-0.5 rounded shadow-inner">0.12s</span>
+            </div>
+
+            <!-- Tape Warmth Leak Level Rotator -->
+            <div class="flex flex-col items-center justify-between p-3 bg-neutral-900/60 rounded-md border border-neutral-900 shadow-inner min-h-[140px] opacity-30 pointer-events-none control-group">
+              <span class="text-[9px] font-mono font-bold text-neutral-400 uppercase tracking-widest text-center">ANALOG HISS</span>
+              <div class="relative w-12 h-12 rounded-full knob-rotatable" id="knob-warmth" data-val="0.15" data-min="0.0" data-max="1.0" data-decimals="1">
+                <div class="absolute inset-0 rounded-full border border-neutral-950 bg-gradient-to-br from-neutral-800 via-neutral-900 to-neutral-700 shadow-2xl"></div>
+                <div class="relative w-10 h-10 rounded-full bg-gradient-to-r from-neutral-600 via-[#8a8a8a] to-neutral-700 border-2 border-[#1c1c1c] shadow-lg flex items-center justify-center transition-transform pointer-events-none marker-point" style="transform: rotate(-90deg)">
+                  <div class="absolute top-0 w-0.5 h-3 bg-[#e8a31e] rounded shadow"></div>
+                </div>
+              </div>
+              <span id="val-warmth-lbl" class="text-[9px] font-mono font-black text-[#d6aa3c] tracking-wider bg-neutral-950 px-1 py-0.5 rounded shadow-inner">15%</span>
+            </div>
+
+          </div>
+
+          <!-- Bottom Row: Oscillator selectors & Reverb loops -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 pt-3">
+            
+            <!-- Voice selection -->
+            <div class="lg:col-span-5 bg-neutral-950 p-4 rounded-lg border border-neutral-900 shadow-inner flex flex-col justify-between">
+              <div class="text-[10px] font-mono font-black text-white tracking-widest uppercase mb-3 flex items-center gap-1.5">
+                <div class="w-1.5 h-1.5 rounded-full bg-[#d6aa3c] animate-pulse"></div>
+                RESONATOR OSCILLATOR VOICE
+              </div>
+              <div class="grid grid-cols-4 gap-2" id="voice-btns-deck">
+                <button data-voice="classic" class="voice-preset-btn py-2 px-1 text-[8px] sm:text-[9px] font-black font-mono tracking-tight uppercase border-2 border-[#f0c550] bg-gradient-to-b from-[#e3bf5d] to-[#b3851b] text-neutral-950 rounded-md flex flex-col items-center justify-center gap-1 cursor-pointer select-none">
+                  <div class="w-1.5 h-1.5 rounded-full bg-neutral-900"></div>
+                  CLASSIC S1
+                </button>
+                <button data-voice="square" class="voice-preset-btn py-2 px-1 text-[8px] sm:text-[9px] font-black font-mono tracking-tight uppercase border-2 border-neutral-800 bg-neutral-900/80 text-neutral-400 rounded-md flex flex-col items-center justify-center gap-1 cursor-pointer select-none">
+                  <div class="w-1.5 h-1.5 rounded-full bg-neutral-700"></div>
+                  RETRO SQ
+                </button>
+                <button data-voice="pulse" class="voice-preset-btn py-2 px-1 text-[8px] sm:text-[9px] font-black font-mono tracking-tight uppercase border-2 border-neutral-800 bg-neutral-900/80 text-neutral-400 rounded-md flex flex-col items-center justify-center gap-1 cursor-pointer select-none">
+                  <div class="w-1.5 h-1.5 rounded-full bg-neutral-700"></div>
+                  NARROW PL
+                </button>
+                <button data-voice="vibrato-wave" class="voice-preset-btn py-2 px-1 text-[8px] sm:text-[9px] font-black font-mono tracking-tight uppercase border-2 border-neutral-800 bg-neutral-900/80 text-neutral-400 rounded-md flex flex-col items-center justify-center gap-1 cursor-pointer select-none">
+                  <div class="w-1.5 h-1.5 rounded-full bg-neutral-700"></div>
+                  VIB SINE
+                </button>
+              </div>
+            </div>
+
+            <!-- Delay settings -->
+            <div class="lg:col-span-7 bg-neutral-950 p-4 rounded-lg border border-neutral-900 shadow-inner flex flex-col justify-between gap-3">
+              <div class="text-[10px] font-mono font-black text-white tracking-widest uppercase flex items-center gap-1.5">
+                <div class="w-1.5 h-1.5 rounded-full bg-[#d6aa3c]"></div>
+                TAPE DELAY / COIL CHAMBER REVERB
+              </div>
+              <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                
+                <div class="w-full flex items-center gap-3">
+                  <span class="text-[8px] font-mono text-neutral-400 font-bold uppercase w-16 select-none">FEEDBACK</span>
+                  <input id="feedback-slider" type="range" min="0.0" max="0.85" step="0.01" value="0.35" class="flex-grow accent-[#d6aa3c] bg-neutral-800 h-1.5 rounded-lg outline-none cursor-pointer" disabled>
+                  <span id="feedback-slider-val" class="text-[9px] font-mono font-bold text-[#d6aa3c] min-w-[32px] text-right">35%</span>
+                </div>
+
+                <div class="w-full flex items-center gap-3">
+                  <span class="text-[8px] font-mono text-neutral-400 font-bold uppercase w-16 select-none">ECHO RATE</span>
+                  <input id="echorate-slider" type="range" min="0.05" max="1.0" step="0.01" value="0.25" class="flex-grow accent-[#d6aa3c] bg-neutral-800 h-1.5 rounded-lg outline-none cursor-pointer" disabled>
+                  <span id="echorate-slider-val" class="text-[9px] font-mono font-bold text-[#d6aa3c] min-w-[32px] text-right">250ms</span>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ROW 3: METAL PLAQUED KEYBOARD -->
+      <section class="w-full relative py-1 z-10">
+        <div 
+          id="stylophone-keyboard-plate"
+          class="relative w-full h-44 sm:h-48 md:h-52 bg-[#0c0d0d] p-1.5 rounded-lg border-4 border-[#252827] shadow-[inset_0px_5px_15px_rgba(0,0,0,0.9),_0_8px_16px_rgba(0,0,0,0.4)] select-none cursor-pointer"
+        >
+          <!-- Retro Gold Accent label stripe -->
+          <div class="absolute top-1.5 left-1.5 right-1.5 h-6 bg-gradient-to-r from-[#ab832c] via-[#ddae34] to-[#ac832b] px-3 flex justify-between items-center text-[10px] text-neutral-900 font-bold border-b border-neutral-950 rounded-t shadow select-none">
+            <span class="font-sans">ELECTRONIC KEYBOARD SYSTEM</span>
+            <span class="font-mono text-[9px] tracking-wider">A3 - E5 RANGE</span>
+            <span class="font-mono tracking-widest text-[9px]">PITCH SECTOR</span>
+          </div>
+
+          <!-- Main printed keyboard area -->
+          <div id="keyboard-pcb-container" class="w-full h-full pt-6 flex relative overflow-hidden bg-neutral-950 rounded-b">
+            <!-- Dynamic Keybed generation in script below -->
+          </div>
+        </div>
+
+        <!-- Power blocked layout banner -->
+        <div id="power-blocked-shield" class="absolute inset-0 bg-neutral-950/20 rounded-lg pointer-events-none flex items-center justify-center border border-neutral-200/50 backdrop-blur-[0.5px] select-none z-30">
+          <div class="px-4 py-2 bg-[#0a0a09]/95 border-2 border-dashed border-red-500/20 rounded-md shadow-2xl flex items-center gap-2 text-red-500">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+            <span class="text-[10px] font-mono font-extrabold uppercase tracking-widest">
+              PILOT SYSTEM POWER SHIELD ACTIVE: SWITCH POWER SWITCH ON
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- EXOTIC DYNAMIC STYLUS COORDINATE pen layer -->
+      <div class="absolute inset-0 pointer-events-none z-40 overflow-visible" id="stylophone-stylus-cord-wrapper">
+        <svg class="absolute inset-0 w-full h-full overflow-visible">
+          <!-- Wire shadow -->
+          <path id="stylus-wire-shadow" d="" fill="none" stroke="rgba(0,0,0,0.4)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" class="blur-[2px]" transform="translate(2, 4)"></path>
+          <!-- Wire trace line -->
+          <path id="stylus-wire" d="" fill="none" stroke="url(#wireGrad)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></path>
+          
+          <defs>
+            <linearGradient id="wireGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#121212" />
+              <stop offset="40%" stop-color="#2e2e2e" />
+              <stop offset="60%" stop-color="#444444" />
+              <stop offset="85%" stop-color="#151515" />
+              <stop offset="100%" stop-color="#0b0b0b" />
+            </linearGradient>
+          </defs>
+        </svg>
+
+        <!-- The actual pen sleeve -->
+        <div id="stylus-pen-body" class="absolute origin-bottom-left transition-transform duration-100 ease-out" style="width: 14px; height: 110px; left: 0px; top: 0px; transform: translate(450px, 350px) rotate(45deg)">
+          <!-- Pen shadow projection -->
+          <div class="absolute top-2 left-2 w-full h-full bg-black/35 rounded-full blur-[3px]"></div>
+          <!-- Sleeve core -->
+          <div class="relative w-full h-full flex flex-col justify-end items-center">
+            <div class="w-[10px] h-[75px] bg-gradient-to-r from-neutral-200 via-white to-neutral-300 rounded-t-sm border-l border-white/40 shadow-sm"></div>
+            <!-- Ribbed segment -->
+            <div class="w-[11px] h-[15px] bg-gradient-to-r from-neutral-800 via-neutral-700 to-neutral-900 border-y border-neutral-950 flex flex-col justify-between p-[2px]">
+              <div class="w-full h-[1px] bg-neutral-600"></div>
+              <div class="w-full h-[1px] bg-neutral-600"></div>
+              <div class="w-full h-[1px] bg-neutral-600"></div>
+            </div>
+            <!-- Golden lock core -->
+            <div class="w-[8px] h-[12px] bg-gradient-to-r from-[#8a6f27] via-[#dcae39] to-[#ad8629]"></div>
+            <!-- Silver tip -->
+            <div class="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[8px] border-t-[#b4b7ba]"></div>
+            <!-- Micro blue neon spark lamp -->
+            <div id="stylus-glow-lamp" class="absolute bottom-[-4px] w-3 h-3 bg-cyan-400 rounded-full animate-ping blur-[1px] opacity-75 hidden"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer cover slots -->
+      <div class="absolute bottom-[-10px] left-1/2 -translate-x-1/2 w-28 h-2 bg-neutral-900 rounded-b border-x border-b border-neutral-700 pointer-events-none select-none"></div>
+
+    </div>
+
+    <!-- Bottom licensing block -->
+    <footer class="w-full max-w-5xl flex flex-col sm:flex-row justify-between items-center text-[10px] text-neutral-500 font-mono select-none mt-6 border-t border-neutral-800 pt-4" id="stylophone-applet-footer">
+      <span class="uppercase">MADE IN UNITED KINGDOM • COPYRIGHT DUBREQ Ltd 1968</span>
+      <span class="mt-2 sm:mt-0 uppercase">RESTORED SOLID STATE SIMULATOR CHIP • NO. S-53321</span>
+    </footer>
+
+    <!-- INTERACTIVE GAMEPLAY ENGINE IN VANILLA JS -->
+    <script>
+      // 1. Precise 20-Note layout database, from A3 to E5
+      const STYLOPHONE_KEYS = [
+        { index: 0, note: "A3", label: "A", frequency: 220.00, isSharp: false, kKey: "q" },
+        { index: 1, note: "A#3", label: "A#", frequency: 233.08, isSharp: true, kKey: "2" },
+        { index: 2, note: "B3", label: "B", frequency: 246.94, isSharp: false, kKey: "w" },
+        { index: 3, note: "C4", label: "C", frequency: 261.63, isSharp: false, kKey: "e" },
+        { index: 4, note: "C#4", label: "C#", frequency: 277.18, isSharp: true, kKey: "4" },
+        { index: 5, note: "D4", label: "D", frequency: 293.66, isSharp: false, kKey: "r" },
+        { index: 6, note: "D#4", label: "D#", frequency: 311.13, isSharp: true, kKey: "5" },
+        { index: 7, note: "E4", label: "E", frequency: 329.63, isSharp: false, kKey: "t" },
+        { index: 8, note: "F4", label: "F", frequency: 349.23, isSharp: false, kKey: "y" },
+        { index: 9, note: "F#4", label: "F#", frequency: 369.99, isSharp: true, kKey: "7" },
+        { index: 10, note: "G4", label: "G", frequency: 392.00, isSharp: false, kKey: "u" },
+        { index: 11, note: "G#4", label: "G#", frequency: 415.30, isSharp: true, kKey: "8" },
+        { index: 12, note: "A4", label: "A", frequency: 440.00, isSharp: false, kKey: "i" },
+        { index: 13, note: "A#4", label: "A#", frequency: 466.16, isSharp: true, kKey: "9" },
+        { index: 14, note: "B4", label: "B", frequency: 493.88, isSharp: false, kKey: "o" },
+        { index: 15, note: "C5", label: "C", frequency: 523.25, isSharp: false, kKey: "p" },
+        { index: 16, note: "C#5", label: "C#", frequency: 554.37, isSharp: true, kKey: "-" },
+        { index: 17, note: "D5", label: "D", frequency: 587.33, isSharp: false, kKey: "[" },
+        { index: 18, note: "D#5", label: "D#", frequency: 622.25, isSharp: true, kKey: "=" },
+        { index: 19, note: "E5", label: "E", frequency: 659.25, isSharp: false, kKey: "]" },
+      ];
+
+      // Audio & Control Parameters
+      const state = {
+        powerOn: false,
+        volume: 0.6,
+        pitchTuning: 0,
+        vibrato: false,
+        voiceMode: 'classic',
+        decayTime: 0.12,
+        delayFeedback: 0.35,
+        delayTime: 0.25,
+        analogWarmth: 0.15,
+        activeKeyIndex: null,
+        isDragging: false,
+        cableAnchor: { x: 300, y: 120 },
+        stylusPos: { x: 330, y: 150 },
+        isStylusActive: false
+      };
+
+      // -------------------------------------------------------------
+      // WEB AUDIO SYNTH ENGINE
+      // -------------------------------------------------------------
+      let audioCtx = null;
+      let primaryGain = null;
+      let cabinetFilter = null;
+      let waveShaper = null;
+      let delayNode = null;
+      let delayFeedbackNode = null;
+      let analyserNode = null;
+      // White/Pink warmth channel
+      let noiseSource = null;
+      let noiseGain = null;
+      let humOscillator = null;
+      let humGain = null;
+      // Synthesizer playing voice
+      let voiceOsc = null;
+      let voiceGainNode = null;
+      let vibratoLfo = null;
+      let vibratoGainNode = null;
+
+      function createDistortionCurve(amount) {
+        const k = typeof amount === 'number' ? amount : 50;
+        const n_samples = 44100;
+        const curve = new Float32Array(n_samples);
+        const deg = Math.PI / 180;
+        for (let i = 0; i < n_samples; ++i) {
+          const x = (i * 2) / n_samples - 1;
+          curve[i] = ((3 + k) * x * 20 * deg) / (Math.PI + k * Math.abs(x));
+        }
+        return curve;
+      }
+
+      function initAudio() {
+        if (audioCtx) return;
+        
+        const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtxClass) return;
+
+        audioCtx = new AudioCtxClass();
+
+        // System Analyzer
+        analyserNode = audioCtx.createAnalyser();
+        analyserNode.fftSize = 256;
+
+        // Gain
+        primaryGain = audioCtx.createGain();
+        primaryGain.gain.setValueAtTime(0, audioCtx.currentTime);
+
+        // Filter PEAK (Classic plastic cavity nasal acoustic styling)
+        cabinetFilter = audioCtx.createBiquadFilter();
+        cabinetFilter.type = 'peaking';
+        cabinetFilter.frequency.setValueAtTime(950, audioCtx.currentTime);
+        cabinetFilter.Q.setValueAtTime(3.8, audioCtx.currentTime);
+        cabinetFilter.gain.setValueAtTime(8, audioCtx.currentTime);
+
+        // Distortion Shaper
+        waveShaper = audioCtx.createWaveShaper();
+        waveShaper.curve = createDistortionCurve(16);
+        waveShaper.oversample = '4x';
+
+        // Echo Delay Module
+        delayNode = audioCtx.createDelay(1.5);
+        delayNode.delayTime.setValueAtTime(state.delayTime, audioCtx.currentTime);
+
+        delayFeedbackNode = audioCtx.createGain();
+        delayFeedbackNode.gain.setValueAtTime(state.delayFeedback, audioCtx.currentTime);
+
+        // Connections wiring
+        waveShaper.connect(cabinetFilter);
+        cabinetFilter.connect(primaryGain);
+
+        cabinetFilter.connect(delayNode);
+        delayNode.connect(delayFeedbackNode);
+        delayFeedbackNode.connect(delayNode);
+        delayFeedbackNode.connect(primaryGain);
+
+        primaryGain.connect(analyserNode);
+        analyserNode.connect(audioCtx.destination);
+
+        // Setup background hiss
+        setupHissLeaking();
+      }
+
+      function setupHissLeaking() {
+        if (!audioCtx) return;
+
+        // Generate pink-noise thermal leakage
+        const bufferSize = audioCtx.sampleRate * 2;
+        const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        let lastValue = 0.0;
+        for (let i = 0; i < bufferSize; i++) {
+          const white = Math.random() * 2 - 1;
+          lastValue = 0.98 * lastValue + 0.02 * white;
+          output[i] = lastValue * 0.15 + (Math.random() < 0.00015 ? (Math.random() * 0.4 - 0.2) : 0);
+        }
+
+        noiseSource = audioCtx.createBufferSource();
+        noiseSource.buffer = noiseBuffer;
+        noiseSource.loop = true;
+
+        noiseGain = audioCtx.createGain();
+        noiseGain.gain.setValueAtTime(0, audioCtx.currentTime);
+
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(400, audioCtx.currentTime);
+
+        noiseSource.connect(filter);
+        filter.connect(noiseGain);
+        noiseGain.connect(audioCtx.destination);
+        noiseSource.start();
+
+        // Mains Hum (50Hz hum)
+        humOscillator = audioCtx.createOscillator();
+        humOscillator.frequency.value = 50;
+
+        humGain = audioCtx.createGain();
+        humGain.gain.setValueAtTime(0, audioCtx.currentTime);
+
+        humOscillator.connect(humGain);
+        humGain.connect(audioCtx.destination);
+        humOscillator.start();
+      }
+
+      function updateHardwareStates() {
+        if (!audioCtx) return;
+        const t = audioCtx.currentTime;
+
+        const targetVol = state.powerOn ? state.volume : 0;
+        primaryGain.gain.setTargetAtTime(targetVol, t, 0.02);
+
+        // Background noise
+        const noiseVol = state.powerOn ? state.analogWarmth * 0.04 : 0;
+        noiseGain.gain.setTargetAtTime(noiseVol, t, 0.08);
+
+        const humVol = state.powerOn ? state.analogWarmth * 0.025 : 0;
+        humGain.gain.setTargetAtTime(humVol, t, 0.08);
+
+        if (delayNode) {
+          delayNode.delayTime.setTargetAtTime(state.delayTime, t, 0.08);
+          delayFeedbackNode.gain.setTargetAtTime(state.delayFeedback, t, 0.05);
+        }
+      }
+
+      function playFrequency(index) {
+        if (!state.powerOn) return;
+        initAudio();
+
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+
+        const key = STYLOPHONE_KEYS[index];
+        if (!key) return;
+
+        const t = audioCtx.currentTime;
+        const tunedFreq = key.frequency * Math.pow(2, state.pitchTuning / 1200);
+
+        // Portamento checks
+        if (voiceOsc && voiceGainNode && state.activeKeyIndex !== null) {
+          voiceOsc.frequency.setTargetAtTime(tunedFreq, t, 0.015);
+          voiceGainNode.gain.setValueAtTime(1.0, t);
+          return;
+        }
+
+        stopActiveVoice(true);
+
+        voiceOsc = audioCtx.createOscillator();
+        voiceOsc.type = getOscillatorType(state.voiceMode);
+        voiceOsc.frequency.setValueAtTime(tunedFreq, t);
+
+        voiceGainNode = audioCtx.createGain();
+        voiceGainNode.gain.setValueAtTime(0, t);
+        voiceGainNode.gain.linearRampToValueAtTime(1.0, t + 0.003); // rapid click contact attack!
+
+        // Vibrato
+        vibratoLfo = audioCtx.createOscillator();
+        vibratoLfo.frequency.setValueAtTime(6.2, t);
+
+        vibratoGainNode = audioCtx.createGain();
+        vibratoGainNode.gain.setValueAtTime(state.vibrato ? 14 : 0, t);
+
+        vibratoLfo.connect(vibratoGainNode);
+        vibratoGainNode.connect(voiceOsc.detune);
+
+        voiceOsc.connect(voiceGainNode);
+        voiceGainNode.connect(waveShaper);
+
+        voiceOsc.start(t);
+        vibratoLfo.start(t);
+      }
+
+      function stopActiveVoice(instant = false) {
+        if (!audioCtx) return;
+        const t = audioCtx.currentTime;
+
+        if (voiceOsc && voiceGainNode) {
+          const osc = voiceOsc;
+          const gain = voiceGainNode;
+          const lfo = vibratoLfo;
+
+          voiceOsc = null;
+          voiceGainNode = null;
+          vibratoLfo = null;
+          vibratoGainNode = null;
+
+          if (instant || state.decayTime < 0.02) {
+            gain.gain.setValueAtTime(gain.gain.value, t);
+            gain.gain.linearRampToValueAtTime(0, t + 0.005);
+            setTimeout(() => {
+              try { osc.stop(); lfo.stop(); } catch(e){}
+            }, 30);
+          } else {
+            gain.gain.setValueAtTime(gain.gain.value, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + state.decayTime);
+            setTimeout(() => {
+              try { osc.stop(); lfo.stop(); } catch(e){}
+            }, state.decayTime * 1000 + 50);
+          }
+        }
+      }
+
+      function getOscillatorType(mode) {
+        if (mode === 'classic') return 'sawtooth';
+        if (mode === 'square') return 'square';
+        if (mode === 'pulse') return 'triangle';
+        return 'sawtooth';
+      }
+
+      // -------------------------------------------------------------
+      // MONITOR VISUALIZERS CANVASES
+      // -------------------------------------------------------------
+      const scopeCanvas = document.getElementById('scope-canvas');
+      const scopeCtx = scopeCanvas.getContext('2d');
+      const vuCanvas = document.getElementById('vu-canvas');
+      const vuCtx = vuCanvas.getContext('2d');
+
+      let needleVal = 0.0;
+      let needleVel = 0.0;
+
+      function renderVisualizers() {
+        requestAnimationFrame(renderVisualizers);
+
+        const dpr = window.devicePixelRatio || 1;
+        const sW = scopeCanvas.clientWidth;
+        const sH = scopeCanvas.clientHeight;
+        
+        if (scopeCanvas.width !== sW * dpr) {
+          scopeCanvas.width = sW * dpr;
+          scopeCanvas.height = sH * dpr;
+          scopeCtx.scale(dpr, dpr);
+        }
+
+        // Draw CRT Scope
+        scopeCtx.fillStyle = '#05180c';
+        scopeCtx.fillRect(0, 0, sW, sH);
+
+        // bezel glass shadows
+        const scopeGlow = scopeCtx.createRadialGradient(sW/2, sH/2, sH*0.35, sW/2, sH/2, sH*0.55);
+        scopeGlow.addColorStop(0, 'rgba(0,0,0,0)');
+        scopeGlow.addColorStop(0.8, 'rgba(0,15,5,0.6)');
+        scopeGlow.addColorStop(1, '#020b05');
+        scopeCtx.fillStyle = scopeGlow;
+        scopeCtx.fillRect(0, 0, sW, sH);
+
+        // draw crosshairs
+        scopeCtx.strokeStyle = 'rgba(0,255,102,0.08)';
+        scopeCtx.lineWidth = 0.8;
+        scopeCtx.beginPath();
+        scopeCtx.moveTo(0, sH/2); scopeCtx.lineTo(sW, sH/2);
+        scopeCtx.moveTo(sW/2, 0); scopeCtx.lineTo(sW/2, sH);
+        scopeCtx.stroke();
+
+        let signalData = new Uint8Array(256);
+        let hasSignal = false;
+        
+        if (state.powerOn && analyserNode) {
+          analyserNode.getByteTimeDomainData(signalData);
+          hasSignal = true;
+        } else {
+          signalData.fill(128);
+        }
+
+        scopeCtx.beginPath();
+        scopeCtx.lineWidth = state.powerOn ? 1.6 : 1.0;
+        scopeCtx.strokeStyle = state.powerOn ? '#3eff8b' : 'rgba(0, 255, 102, 0.04)';
+        if (state.powerOn) {
+          scopeCtx.shadowBlur = 9;
+          scopeCtx.shadowColor = '#00ff66';
+        } else {
+          scopeCtx.shadowBlur = 0;
+        }
+
+        for (let i = 0; i < 256; i++) {
+          let percent = signalData[i] / 255;
+          if (state.powerOn && !voiceOsc) {
+            // electronic static wiggles when powered but idle
+            percent += Math.sin(i * 0.08 + Date.now()*0.01) * 0.01 + (Math.random() - 0.5) * 0.01;
+          }
+          const x = (i / 255) * sW;
+          const y = percent * sH;
+          if (i === 0) scopeCtx.moveTo(x, y);
+          else scopeCtx.lineTo(x, y);
+        }
+        scopeCtx.stroke();
+        scopeCtx.shadowBlur = 0;
+
+        // REFLECTION GLARES
+        const glassGlare = scopeCtx.createLinearGradient(0, 0, sW, sH);
+        glassGlare.addColorStop(0, 'rgba(255, 255, 255, 0.08)');
+        glassGlare.addColorStop(1, 'rgba(0, 0, 0, 0.45)');
+        scopeCtx.fillStyle = glassGlare;
+        scopeCtx.fillRect(0, 0, sW, sH);
+
+        // VIBRATE SPEAKER CONE
+        const meshElement = document.getElementById('speaker-mesh');
+        if (meshElement) {
+          let scaleVal = 1.0;
+          if (state.powerOn && voiceOsc && analyserNode) {
+            let sum = 0;
+            analyserNode.getByteTimeDomainData(signalData);
+            for (let i = 0; i < 64; i++) {
+              sum += Math.abs((signalData[i] / 128) - 1.0);
+            }
+            scaleVal = 1.0 + (sum / 64) * 0.08;
+          }
+          meshElement.style.transform = `scale(${scaleVal})`;
+        }
+
+        // DRAW ROTATIONAL MOVING COIL VU METER
+        const vW = vuCanvas.clientWidth;
+        const vH = vuCanvas.clientHeight;
+        if (vuCanvas.width !== vW * dpr) {
+          vuCanvas.width = vW * dpr;
+          vuCanvas.height = vH * dpr;
+          vuCtx.scale(dpr, dpr);
+        }
+
+        const dialBg = state.powerOn ? '#fcede3' : '#e3dfd3';
+        vuCtx.fillStyle = dialBg;
+        vuCtx.fillRect(0, 0, vW, vH);
+
+        // dynamic backing bulb glow
+        if (state.powerOn) {
+          const glow = vuCtx.createRadialGradient(vW/2, vH*0.9, vH*0.1, vW/2, vH*0.9, vH*0.9);
+          glow.addColorStop(0, 'rgba(255, 140, 25, 0.45)');
+          glow.addColorStop(0.5, 'rgba(255, 100, 10, 0.1)');
+          glow.addColorStop(1, 'rgba(0,0,0,0)');
+          vuCtx.fillStyle = glow;
+          vuCtx.fillRect(0, 0, vW, vH);
+        }
+
+        // VU DB Arch
+        const pivotX = vW / 2;
+        const pivotY = vH * 0.92;
+        const arcRadius = vH * 0.72;
+        const startAng = -Math.PI * 0.82;
+        const endAng = -Math.PI * 0.18;
+
+        vuCtx.strokeStyle = 'rgba(20,20,20,0.85)';
+        vuCtx.lineWidth = 1.3;
+        vuCtx.beginPath();
+        vuCtx.arc(pivotX, pivotY, arcRadius, startAng, endAng);
+        vuCtx.stroke();
+
+        // Red clipping zone mark
+        vuCtx.strokeStyle = '#c91a1a';
+        vuCtx.lineWidth = 2.8;
+        vuCtx.beginPath();
+        vuCtx.arc(pivotX, pivotY, arcRadius, startAng + (endAng-startAng)*0.78, endAng);
+        vuCtx.stroke();
+
+        // spring physics calculations
+        let targetRMS = 0;
+        if (state.powerOn && voiceOsc && analyserNode) {
+          let sumSq = 0;
+          analyserNode.getByteTimeDomainData(signalData);
+          for (let i = 0; i < 128; i++) {
+            const normalized = (signalData[i] / 128) - 1.0;
+            sumSq += normalized * normalized;
+          }
+          targetRMS = Math.min(Math.sqrt(sumSq / 128) * 4.3, 1.0) + (Math.random()-0.5)*0.035;
+        } else if (state.powerOn) {
+          targetRMS = 0.01 + Math.random()*0.012;
+        }
+
+        const force = (targetRMS - needleVal) * 0.16;
+        needleVel = (needleVel + force) * 0.81;
+        needleVal += needleVel;
+        needleVal = Math.max(0.0, Math.min(1.02, needleVal));
+
+        // Draw physical needle pointer projection shadow
+        const currentAngle = startAng + needleVal * (endAng - startAng);
+        const tipX = pivotX + Math.cos(currentAngle) * (arcRadius - 2);
+        const tipY = pivotY + Math.sin(currentAngle) * (arcRadius - 2);
+
+        vuCtx.strokeStyle = 'rgba(0,0,0,0.22)';
+        vuCtx.lineWidth = 1.5;
+        vuCtx.beginPath();
+        vuCtx.moveTo(pivotX + 2, pivotY + 2);
+        vuCtx.lineTo(tipX + 2, tipY + 2);
+        vuCtx.stroke();
+
+        // Black central pointer needle
+        vuCtx.strokeStyle = '#1b1c1b';
+        vuCtx.lineWidth = 1.1;
+        vuCtx.beginPath();
+        vuCtx.moveTo(pivotX, pivotY);
+        vuCtx.lineTo(tipX, tipY);
+        vuCtx.stroke();
+
+        // metal core cap
+        vuCtx.beginPath();
+        vuCtx.arc(pivotX, pivotY, 11, 0, Math.PI * 2);
+        vuCtx.fillStyle = '#222524';
+        vuCtx.fill();
+        vuCtx.strokeStyle = '#434645';
+        vuCtx.lineWidth = 1.5;
+        vuCtx.stroke();
+
+        vuCtx.fillStyle = '#6b6e6c';
+        vuCtx.font = '700 8px sans-serif';
+        vuCtx.textAlign = 'center';
+        vuCtx.fillText("VOLUME UNIT", vW / 2, vH * 0.45);
+      }
+
+      // -------------------------------------------------------------
+      // KEYBOARD RENDERING & EVENT ROUTING
+      // -------------------------------------------------------------
+      const keyboardPCB = document.getElementById('keyboard-pcb-container');
+
+      function buildHardwareKeyboard() {
+        keyboardPCB.innerHTML = '';
+        const whiteIdxs = [0, 2, 3, 5, 7, 8, 10, 12, 14, 15, 17, 19];
+        const wWidthMultiplier = 100 / 12;
+
+        STYLOPHONE_KEYS.forEach((key) => {
+          const keyEl = document.createElement('div');
+          keyEl.id = `stylophone-key-${key.index}`;
+          keyEl.setAttribute('data-key-index', key.index);
+
+          // Add touch movement capture attributes dynamically
+          if (key.isSharp) {
+            let leftWhiteK = 0;
+            for (let w = 0; w < whiteIdxs.length; w++) {
+              if (whiteIdxs[w] < key.index) leftWhiteK = w;
+            }
+            const leftPerc = ((leftWhiteK + 0.65) / 12) * 100;
+            keyEl.className = 'absolute top-0 h-[60%] w-[5.5%] z-20 flex flex-col justify-end items-center pb-2 border-x border-b border-[#0f1010] shadow-md bg-gradient-to-b from-neutral-300 via-neutral-100 to-neutral-400 hover:from-neutral-200 select-none cursor-pointer duration-75';
+            keyEl.style.left = `${leftPerc}%`;
+          } else {
+            const wOrder = whiteIdxs.indexOf(key.index);
+            const leftPerc = wOrder * wWidthMultiplier;
+            keyEl.className = 'absolute top-0 h-full flex flex-col justify-end items-center pb-3 border-r border-[#151717] bg-gradient-to-b from-neutral-200 via-neutral-400 to-neutral-300 hover:from-neutral-100 select-none cursor-pointer duration-75';
+            keyEl.style.left = `${leftPerc}%`;
+            keyEl.style.width = `${wWidthMultiplier}%`;
+          }
+
+          // note lettering elements
+          const labelSpan = document.createElement('span');
+          labelSpan.className = `text-[9px] font-extrabold text-neutral-950 font-sans select-none leading-none ${key.isSharp ? 'rotate-90 pb-1' : ''}`;
+          labelSpan.innerText = key.label;
+
+          const kbKeySpan = document.createElement('span');
+          kbKeySpan.className = 'text-[7px] font-mono font-bold text-neutral-500 mt-0.5 uppercase select-none';
+          kbKeySpan.innerText = key.kKey;
+
+          const terminalDot = document.createElement('div');
+          terminalDot.className = 'w-1.5 h-1.5 rounded-full bg-neutral-900 border border-neutral-600 mt-1 shadow-inner select-none';
+
+          keyEl.appendChild(labelSpan);
+          keyEl.appendChild(kbKeySpan);
+          keyEl.appendChild(terminalDot);
+
+          // Listeners inside PCB
+          keyEl.addEventListener('mousedown', (e) => handleTouchBegin(key.index, e));
+          keyEl.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            handleTouchBegin(key.index, touch);
+          });
+
+          keyboardPCB.appendChild(keyEl);
+        });
+
+        // Event terminations
+        document.addEventListener('mouseup', handleTouchRelease);
+        document.addEventListener('touchend', handleTouchRelease);
+        document.addEventListener('touchcancel', handleTouchRelease);
+        
+        // Custom global stylus dragging
+        window.addEventListener('mousemove', handleGlobalPointerMove);
+        window.addEventListener('touchmove', handleGlobalPointerMove, { passive: false });
+      }
+
+      function updateActiveKeyVisual(index) {
+        STYLOPHONE_KEYS.forEach((key) => {
+          const el = document.getElementById(`stylophone-key-${key.index}`);
+          if (!el) return;
+          if (key.index === index && state.powerOn) {
+            // Apply beautiful active neon glowing metal aesthetics
+            el.className = el.className.replace(/bg-gradient-to-b .* to-\S+/, 'bg-gradient-to-b from-[#e5f0fa] via-[#a3c9e8] to-[#6099c2]');
+            el.style.boxShadow = 'inset 0px 4px 8px rgba(0,0,0,0.6)';
+          } else {
+            // revert
+            if (key.isSharp) {
+              el.className = 'absolute top-0 h-[60%] w-[5.5%] z-20 flex flex-col justify-end items-center pb-2 border-x border-b border-[#0f1010] shadow-md bg-gradient-to-b from-neutral-300 via-neutral-100 to-neutral-400 hover:from-neutral-200 select-none cursor-pointer duration-75';
+            } else {
+              el.className = 'absolute top-0 h-full flex flex-col justify-end items-center pb-3 border-r border-[#151717] bg-gradient-to-b from-neutral-200 via-neutral-400 to-neutral-300 hover:from-neutral-100 select-none cursor-pointer duration-75';
+            }
+            el.style.boxShadow = '';
+          }
+        });
+      }
+
+      // Stylus placement vector projections
+      function updateStylusPlacement(clientX, clientY) {
+        const containment = document.getElementById('stylophone-hardware-containment');
+        if (!containment) return;
+
+        const contRect = containment.getBoundingClientRect();
+        const rx = clientX - contRect.left;
+        const ry = clientY - contRect.top;
+
+        state.stylusPos = { x: rx, y: ry };
+        
+        const stylusPen = document.getElementById('stylus-pen-body');
+        const spark = document.getElementById('stylus-glow-lamp');
+
+        if (stylusPen) {
+          // Slide pen sleeve to contact grid
+          stylusPen.style.transform = `translate(${rx}px, ${ry}px) rotate(-25deg)`;
+        }
+        if (spark) {
+          spark.classList.remove('hidden');
+        }
+
+        // Draw spring coiled helix cable wires!
+        renderCoiledWire(rx, ry);
+      }
+
+      function updateStylusInactive() {
+        const stylusPen = document.getElementById('stylus-pen-body');
+        const spark = document.getElementById('stylus-glow-lamp');
+        
+        if (stylusPen) {
+          // let stylus pen rest peacefully inside storage compartment
+          const restX = state.cableAnchor.x + 85;
+          const restY = state.cableAnchor.y - 12;
+          stylusPen.style.transform = `translate(${restX}px, ${restY}px) rotate(45deg)`;
+        }
+        if (spark) {
+          spark.classList.add('hidden');
+        }
+
+        renderCoiledWire(state.cableAnchor.x + 85, state.cableAnchor.y - 12);
+      }
+
+      function renderCoiledWire(tx, ty) {
+        const ax = state.cableAnchor.x;
+        const ay = state.cableAnchor.y;
+
+        const pathMain = document.getElementById('stylus-wire');
+        const pathShadow = document.getElementById('stylus-wire-shadow');
+
+        const dx = tx - ax;
+        const dy = ty - ay;
+        const distance = Math.sqrt(dx*dx + dy*dy);
+
+        const totalCoils = Math.max(16, Math.floor(distance / 7));
+        const points = [];
+
+        points.push(`M ${ax} ${ay}`);
+
+        if (distance < 20) {
+          points.push(`Q ${(ax+tx)/2} ${Math.max(ay, ty) + 15} ${tx} ${ty}`);
+        } else {
+          for (let i = 0; i <= totalCoils; i++) {
+            const ratio = i / totalCoils;
+            const baseLenX = ax + dx * ratio;
+            const baseLenY = ay + dy * ratio;
+
+            if (i > 0 && i < totalCoils) {
+              const normX = -dy / distance;
+              const normY = dx / distance;
+              const angle = ratio * Math.PI * 2 * totalCoils;
+              const radius = Math.min(10, 5 + (distance / 50));
+
+              const offsetSide = Math.sin(angle) * radius;
+              const offsetAlong = Math.cos(angle) * (radius * 0.4);
+
+              const cx = baseLenX + normX * offsetSide + (dx / distance) * offsetAlong;
+              const cy = baseLenY + normY * offsetSide + (dy / distance) * offsetAlong;
+
+              points.push(`L ${cx} ${cy}`);
+            } else if (i === totalCoils) {
+              points.push(`L ${tx} ${ty}`);
+            }
+          }
+        }
+
+        const dStr = points.join(' ');
+        if (pathMain) pathMain.setAttribute('d', dStr);
+        if (pathShadow) pathShadow.setAttribute('d', dStr);
+      }
+
+      function handleTouchBegin(index, e) {
+        if (!state.powerOn) return;
+        state.isDragging = true;
+        state.activeKeyIndex = index;
+        
+        playFrequency(index);
+        updateActiveKeyVisual(index);
+        updateStylusPlacement(e.clientX, e.clientY);
+      }
+
+      function handleGlobalPointerMove(e) {
+        if (activeKnob) return; // ignore when adjusting hardware knobs
+        if (!state.powerOn || !state.isDragging) return;
+
+        // Prevent body scrolling on touch screens while active dragging
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+
+        let clientX, clientY;
+        if (e.touches && e.touches.length > 0) {
+          clientX = e.touches[0].clientX;
+          clientY = e.touches[0].clientY;
+        } else {
+          clientX = e.clientX;
+          clientY = e.clientY;
+        }
+
+        // Smooth physical stylus pen tracking
+        updateStylusPlacement(clientX, clientY);
+
+        // Find which keyboard key coordinates correspond to the stylus pointer
+        const elements = document.elementsFromPoint(clientX, clientY);
+        let matchedIndex = null;
+
+        for (const el of elements) {
+          const idxAttr = el.getAttribute('data-key-index');
+          if (idxAttr !== null) {
+            matchedIndex = parseInt(idxAttr, 10);
+            break;
+          }
+        }
+
+        if (matchedIndex !== null) {
+          if (matchedIndex !== state.activeKeyIndex) {
+            state.activeKeyIndex = matchedIndex;
+            playFrequency(matchedIndex);
+            updateActiveKeyVisual(matchedIndex);
+          }
+        } else {
+          // If the pointer slides off the keybed, stop playing but keep dragging active
+          if (state.activeKeyIndex !== null) {
+            state.activeKeyIndex = null;
+            stopActiveVoice();
+            updateActiveKeyVisual(null);
+          }
+        }
+      }
+
+      function handleTouchRelease() {
+        state.isDragging = false;
+        state.activeKeyIndex = null;
+        stopActiveVoice();
+        updateActiveKeyVisual(null);
+        updateStylusInactive();
+      }
+
+      // -------------------------------------------------------------
+      // HARDWARE KNOB DRAGS (ROTATIONAL MAPPING)
+      // -------------------------------------------------------------
+      let activeKnob = null;
+      let startKnobY = 0;
+      let startKnobVal = 0;
+
+      function configureKnobs() {
+        const knobs = document.querySelectorAll('.knob-rotatable');
+        knobs.forEach((k) => {
+          k.addEventListener('mousedown', (e) => {
+            if (!state.powerOn) return;
+            activeKnob = k;
+            startKnobY = e.clientY;
+            startKnobVal = parseFloat(k.getAttribute('data-val'));
+          });
+        });
+
+        document.addEventListener('mousemove', (e) => {
+          if (!activeKnob) return;
+          const deltaY = startKnobY - e.clientY; // upwards = add value
+          const min = parseFloat(activeKnob.getAttribute('data-min'));
+          const max = parseFloat(activeKnob.getAttribute('data-max'));
+          const decimals = parseInt(activeKnob.getAttribute('data-decimals'), 10);
+
+          const range = max - min;
+          const deltaVal = (deltaY / 150) * range;
+          let newVal = startKnobVal + deltaVal;
+          newVal = Math.max(min, Math.min(max, newVal));
+
+          activeKnob.setAttribute('data-val', newVal);
+          
+          // apply rotation angle
+          const percent = (newVal - min) / range;
+          const angle = percent * 270 - 135;
+          const marker = activeKnob.querySelector('.marker-point');
+          if (marker) marker.style.transform = `rotate(${angle}deg)`;
+
+          // trigger parameters updates
+          const kId = activeKnob.id;
+          if (kId === 'knob-volume') {
+            state.volume = newVal;
+            document.getElementById('val-volume-lbl').innerText = `${Math.round(newVal*100)}%`;
+          } else if (kId === 'knob-pitch') {
+            state.pitchTuning = newVal;
+            document.getElementById('val-pitch-lbl').innerText = `${Math.round(newVal)}¢`;
+          } else if (kId === 'knob-decay') {
+            state.decayTime = newVal;
+            document.getElementById('val-decay-lbl').innerText = `${newVal.toFixed(2)}s`;
+          } else if (kId === 'knob-warmth') {
+            state.analogWarmth = newVal;
+            document.getElementById('val-warmth-lbl').innerText = `${Math.round(newVal*100)}%`;
+          }
+
+          updateHardwareStates();
+        });
+
+        document.addEventListener('mouseup', () => {
+          activeKnob = null;
+        });
+      }
+
+      // -------------------------------------------------------------
+      // SWITCH CONTROLS COMPONENT TACTILE ANIMATIONS
+      // -------------------------------------------------------------
+      function configureSwitchesAndPresets() {
+        const powerBtn = document.getElementById('power-switch-btn');
+        const powerH = document.getElementById('power-handle');
+        const powerLED = document.getElementById('power-led');
+        const shieldBlocked = document.getElementById('power-blocked-shield');
+
+        // Toggle power S1 Slider
+        powerBtn.onclick = () => {
+          state.powerOn = !state.powerOn;
+          initAudio();
+
+          if (state.powerOn) {
+            powerH.style.transform = 'translateY(-1px)';
+            powerLED.className = 'w-3.5 h-3.5 rounded-full border border-neutral-800 transition-all duration-300 bg-red-500 shadow-[0_0_8px_#ef4444,_0_0_15px_#f87171]';
+            document.getElementById('power-status-lbl').innerText = 'ACTIVE';
+            shieldBlocked.classList.add('hidden');
+
+            // enable control groups opacity
+            document.querySelectorAll('.control-group').forEach(el => el.classList.remove('opacity-30', 'pointer-events-none'));
+            document.getElementById('vibrato-switch-btn').classList.remove('opacity-30', 'pointer-events-none');
+            document.getElementById('feedback-slider').disabled = false;
+            document.getElementById('echorate-slider').disabled = false;
+          } else {
+            powerH.style.transform = 'translateY(15px)';
+            powerLED.className = 'w-3.5 h-3.5 rounded-full border border-neutral-800 transition-all duration-300 bg-neutral-800 shadow-[inset_0_1px_3px_rgba(0,0,0,0.8)]';
+            document.getElementById('power-status-lbl').innerText = 'OFFLINE';
+            shieldBlocked.classList.remove('hidden');
+
+            // disable visually
+            document.querySelectorAll('.control-group').forEach(el => el.classList.add('opacity-30', 'pointer-events-none'));
+            document.getElementById('vibrato-switch-btn').classList.add('opacity-30', 'pointer-events-none');
+            document.getElementById('feedback-slider').disabled = true;
+            document.getElementById('echorate-slider').disabled = true;
+
+            handleTouchRelease();
+          }
+
+          updateHardwareStates();
+        };
+
+        // Vibrato Slider Toggle
+        const vibBtn = document.getElementById('vibrato-switch-btn');
+        const vibH = document.getElementById('vibrato-handle');
+        vibBtn.onclick = () => {
+          if (!state.powerOn) return;
+          state.vibrato = !state.vibrato;
+          if (state.vibrato) {
+            vibH.style.transform = 'translateY(-1px)';
+            document.getElementById('vibrato-status-lbl').innerText = 'WARBLE';
+          } else {
+            vibH.style.transform = 'translateY(15px)';
+            document.getElementById('vibrato-status-lbl').innerText = 'DIRECT';
+          }
+          updateHardwareStates();
+        };
+
+        // Eco sliders
+        document.getElementById('feedback-slider').oninput = (e) => {
+          state.delayFeedback = parseFloat(e.target.value);
+          document.getElementById('feedback-slider-val').innerText = `${Math.round(state.delayFeedback*100)}%`;
+          updateHardwareStates();
+        };
+        document.getElementById('echorate-slider').oninput = (e) => {
+          state.delayTime = parseFloat(e.target.value);
+          document.getElementById('echorate-slider-val').innerText = `${Math.round(state.delayTime*1000)}ms`;
+          updateHardwareStates();
+        };
+
+        // Voice Select logic
+        const pBtns = document.querySelectorAll('.voice-preset-btn');
+        pBtns.forEach((btn) => {
+          btn.onclick = () => {
+            if (!state.powerOn) return;
+            const mode = btn.getAttribute('data-voice');
+            state.voiceMode = mode;
+
+            pBtns.forEach(b => {
+              b.className = 'voice-preset-btn py-2 px-1 text-[8px] sm:text-[9px] font-black font-mono tracking-tight uppercase border-2 border-neutral-800 bg-neutral-900/80 text-neutral-400 rounded-md flex flex-col items-center justify-center gap-1 cursor-pointer select-none';
+              b.children[0].className = 'w-1.5 h-1.5 rounded-full bg-neutral-700';
+            });
+
+            btn.className = 'voice-preset-btn py-2 px-1 text-[8px] sm:text-[9px] font-black font-mono tracking-tight uppercase border-2 border-[#f0c550] bg-gradient-to-b from-[#e3bf5d] to-[#b3851b] text-neutral-950 rounded-md flex flex-col items-center justify-center gap-1 cursor-pointer select-none';
+            btn.children[0].className = 'w-1.5 h-1.5 rounded-full bg-neutral-900';
+
+            updateHardwareStates();
+          };
+        });
+      }
+
+      // -------------------------------------------------------------
+      // COMPUTER KEYBOARD SHORTCUTS ENGINE
+      // -------------------------------------------------------------
+      const pressedPhysicalKeys = new Set();
+      
+      function configureKeyboardMappings() {
+        window.addEventListener('keydown', (e) => {
+          if (!state.powerOn) return;
+          const val = e.key.toLowerCase();
+          if (pressedPhysicalKeys.has(val)) return;
+
+          const matched = STYLOPHONE_KEYS.find((k) => k.kKey === val);
+          if (matched) {
+            e.preventDefault();
+            pressedPhysicalKeys.add(val);
+            
+            state.activeKeyIndex = matched.index;
+            playFrequency(matched.index);
+            updateActiveKeyVisual(matched.index);
+            
+            // Vector placement calculations
+            const keyEl = document.getElementById(`stylophone-key-${matched.index}`);
+            if (keyEl) {
+              const rect = keyEl.getBoundingClientRect();
+              const contRect = document.getElementById('stylophone-hardware-containment').getBoundingClientRect();
+              const absoluteTipX = rect.left - contRect.left + rect.width / 2;
+              const absoluteTipY = rect.top - contRect.top + rect.height * 0.5;
+              state.stylusPos = { x: absoluteTipX, y: absoluteTipY };
+              updateStylusPlacement(rect.left + rect.width/2, rect.top + rect.height*0.5);
+            }
+          }
+        });
+
+        window.addEventListener('keyup', (e) => {
+          const val = e.key.toLowerCase();
+          if (pressedPhysicalKeys.has(val)) {
+            pressedPhysicalKeys.delete(val);
+
+            if (pressedPhysicalKeys.size === 0) {
+              handleTouchRelease();
+            } else {
+              const remaining = Array.from(pressedPhysicalKeys);
+              const lastChar = remaining[remaining.length - 1];
+              const matched = STYLOPHONE_KEYS.find((k) => k.kKey === lastChar);
+              if (matched) {
+                state.activeKeyIndex = matched.index;
+                playFrequency(matched.index);
+                updateActiveKeyVisual(matched.index);
+              }
+            }
+          }
+        });
+      }
+
+      // Anchor Port Calibrations
+      function calibrateAnchorCable() {
+        const containment = document.getElementById('stylophone-hardware-containment');
+        const gridBox = document.getElementById('stylophone-speaker-grill-box');
+        if (containment && gridBox) {
+          const contRect = containment.getBoundingClientRect();
+          const gridRect = gridBox.getBoundingClientRect();
+          const ax = gridRect.left - contRect.left + gridRect.width * 0.55;
+          const ay = gridRect.bottom - contRect.top - 8;
+          state.cableAnchor = { x: ax, y: ay };
+        }
+        updateStylusInactive();
+      }
+
+      // INITIALISE RUNTIME APPS
+      window.onload = () => {
+        buildHardwareKeyboard();
+        configureKnobs();
+        configureSwitchesAndPresets();
+        configureKeyboardMappings();
+        
+        setTimeout(() => {
+          calibrateAnchorCable();
+        }, 150);
+        
+        window.onresize = calibrateAnchorCable;
+
+        // Visual loop ticks
+        renderVisualizers();
+      };
+    </script>
+  </body>
+</html>
