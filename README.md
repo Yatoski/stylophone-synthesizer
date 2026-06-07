@@ -14,7 +14,7 @@ It delivers an authentic retro instrument experience through its sound engine an
 
 ### 🚀 Live Preview
 Try the live simulator directly in your browser here:
-👉 **[PASTE YOUR LIVE LINK HERE]** *(e.g., https://yourusername.github.io/your-repo/)*
+👉 **[PASTE YOUR LIVE LINK HERE]** *(e.g.,https://yatoski.github.io/stylophone-synthesizer/)*
 
 ### ✨ Features
 * **Authentic Sound Engine:** Real-time analog waveforms (Square/Sawtooth morphing) generated purely via the Web Audio API.
@@ -48,7 +48,7 @@ Hem ses motorunun yapısıyla hem de analog VU metre, CRT osiloskop ekranı ve d
 
 ### 🚀 Canlı Önizleme
 Projenin çalışan halini tarayıcınızda hemen denemek için aşağıdaki bağlantıya tıklayabilirsiniz:
-👉 **[CANLI YAYIN LİNKİNİ BURAYA YAPIŞTIRIN]** *(Örn: https://kullaniciadi.github.io/repo-adi/)*
+👉 **[CANLI YAYIN LİNKİNİ BURAYA YAPIŞTIRIN]** *(Örn:https://yatoski.github.io/stylophone-synthesizer/)*
 
 ### ✨ Özellikler
 * **Otantik Ses Motoru:** Web Audio API kullanılarak üretilen gerçek zamanlı analog dalga formları (Kare/Testere dişi geçişleri).
