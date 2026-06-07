@@ -2,7 +2,7 @@
 An interactive, highly realistic retro Stylaphone S-1 synthesizer simulator built with Web Audio API, Tailwind CSS, and HTML5 Canvas. Features CRT oscilloscopes, VU meters, custom audio effects, and authentic stylus cable physics.
 # 🎹 Stylaphone S-1 Retro Synthesizer Simulator
 
-[English](#english) | [Türkçe](#türkçe)
+[English](#english) | [Türkçe](#türkçe) 
 
 ---
 
